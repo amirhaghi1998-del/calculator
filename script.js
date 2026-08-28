@@ -1,24 +1,23 @@
-
-// دریافت عنصر نمایشگر
+// Get display element
 const display = document.getElementById('display');
 
-// متغیر حالت: عبارت فعلی که کاربر در حال ساخت آن است
+// State variable: current expression user is building
 let currentExpression = '';
 
-// به‌روزرسانی نمایشگر
+// Update display
 function updateDisplay() {
     display.textContent = currentExpression || '0';
 }
 
-// پاک کردن همه چیز
+// Clear all
 function clearAll() {
     currentExpression = '';
     updateDisplay();
 }
 
-// افزودن یک کاراکتر به عبارت
+// Append a character to expression
 function appendToExpression(char) {
-    // جلوگیری از صفرهای تکراری در ابتدای عدد
+    // Prevent repeated zeros at beginning of number
     if (char === '.' && currentExpression === '') {
         currentExpression = '0.';
     } else if (currentExpression === '0' && char !== '.' && !isOperator(char)) {
@@ -29,36 +28,36 @@ function appendToExpression(char) {
     updateDisplay();
 }
 
-// بررسی اینکه کاراکتر عملگر است یا نه
+// Check if character is operator
 function isOperator(char) {
     return ['+', '-', '*', '/', '%', '^'].includes(char);
 }
 
-// تابع اصلی محاسبه عبارت
+// Main calculation function
 function calculate(expression) {
-    // حذف فاصله‌ها
+    // Remove spaces
     expression = expression.replace(/\s+/g, '');
 
-    // بررسی پرانتزهای متوازن
+    // Check balanced parentheses
     if (!areParenthesesBalanced(expression)) {
-        throw new Error('پرانتز نامتوازن');
+        throw new Error('Unbalanced parentheses');
     }
 
-    // تبدیل عبارت به آرایه‌ای از توکن‌ها
+    // Convert expression to array of tokens
     const tokens = tokenize(expression);
 
-    // ارزیابی توکن‌ها با پارسر نزولی بازگشتی
+    // Evaluate tokens with recursive descent parser
     const result = parseExpression(tokens);
 
-    // اگر توکن اضافه‌ای باقی مانده باشد، خطا می‌دهیم
+    // If extra tokens remain, throw error
     if (tokens.length > 0) {
-        throw new Error('عبارت نامعتبر');
+        throw new Error('Invalid expression');
     }
 
     return result;
 }
 
-// بررسی توازن پرانتزها
+// Check parentheses balance
 function areParenthesesBalanced(expr) {
     let count = 0;
     for (const char of expr) {
@@ -69,44 +68,44 @@ function areParenthesesBalanced(expr) {
     return count === 0;
 }
 
-// تبدیل رشته عبارت به آرایه توکن‌ها
+// Convert expression string to token array
 function tokenize(expr) {
     const tokens = [];
     let i = 0;
     while (i < expr.length) {
         const char = expr[i];
 
-        // عدد (اعشاری یا صحیح)
+        // Number (decimal or integer)
         if (/[0-9.]/.test(char)) {
             let num = '';
             while (i < expr.length && /[0-9.]/.test(expr[i])) {
                 num += expr[i];
                 i++;
             }
-            // اگر بیش از یک نقطه در عدد بود خطا
+            // Error if more than one dot in number
             if ((num.match(/\./g) || []).length > 1) {
-                throw new Error('عدد نامعتبر');
+                throw new Error('Invalid number');
             }
             tokens.push(parseFloat(num));
             continue;
         }
 
-        // عملگر یا پرانتز
+        // Operator or parenthesis
         if (['+', '-', '*', '/', '%', '^', '(', ')'].includes(char)) {
             tokens.push(char);
             i++;
             continue;
         }
 
-        // کاراکتر نامعتبر
-        throw new Error('کاراکتر نامعتبر: ' + char);
+        // Invalid character
+        throw new Error('Invalid character: ' + char);
     }
     return tokens;
 }
 
-// توابع پارسر نزولی بازگشتی (Recursive Descent Parser)
+// Recursive Descent Parser functions
 
-// سطح اول: جمع و تفریق (کمترین اولویت)
+// Level 1: Addition and subtraction (lowest precedence)
 function parseExpression(tokens) {
     let left = parseTerm(tokens);
     while (tokens.length > 0 && (tokens[0] === '+' || tokens[0] === '-')) {
@@ -117,7 +116,7 @@ function parseExpression(tokens) {
     return left;
 }
 
-// سطح دوم: ضرب، تقسیم، درصد و توان (اولویت بالاتر)
+// Level 2: Multiplication, division, percent, and power (higher precedence)
 function parseTerm(tokens) {
     let left = parseFactor(tokens);
     while (tokens.length > 0 && ['*', '/', '%', '^'].includes(tokens[0])) {
@@ -128,11 +127,11 @@ function parseTerm(tokens) {
                 left *= right;
                 break;
             case '/':
-                if (right === 0) throw new Error('تقسیم بر صفر');
+                if (right === 0) throw new Error('Division by zero');
                 left /= right;
                 break;
             case '%':
-                left = (left * right) / 100; // درصد به این معنی که left درصد right را حساب می‌کند
+                left = (left * right) / 100; // Percent meaning left percent of right
                 break;
             case '^':
                 left = Math.pow(left, right);
@@ -142,39 +141,39 @@ function parseTerm(tokens) {
     return left;
 }
 
-// سطح سوم: اعداد، پرانتز و علامت منفی یکانی
+// Level 3: Numbers, parentheses, and unary minus
 function parseFactor(tokens) {
-    if (tokens.length === 0) throw new Error('عبارت ناقص');
+    if (tokens.length === 0) throw new Error('Incomplete expression');
 
-    // علامت منفی یکانی
+    // Unary minus
     if (tokens[0] === '-') {
         tokens.shift();
         return -parseFactor(tokens);
     }
-    // علامت مثبت یکانی (اختیاری)
+    // Unary plus (optional)
     if (tokens[0] === '+') {
         tokens.shift();
         return parseFactor(tokens);
     }
 
-    // پرانتز
+    // Parentheses
     if (tokens[0] === '(') {
-        tokens.shift(); // حذف '('
+        tokens.shift(); // Remove '('
         const result = parseExpression(tokens);
-        if (tokens[0] !== ')') throw new Error('پرانتز بسته نشده');
-        tokens.shift(); // حذف ')'
+        if (tokens[0] !== ')') throw new Error('Unclosed parenthesis');
+        tokens.shift(); // Remove ')'
         return result;
     }
 
-    // عدد
+    // Number
     if (typeof tokens[0] === 'number') {
         return tokens.shift();
     }
 
-    throw new Error('عبارت نامعتبر');
+    throw new Error('Invalid expression');
 }
 
-// مدیریت کلیک روی دکمه‌ها
+// Handle button clicks
 document.querySelectorAll('.btn').forEach(button => {
     button.addEventListener('click', () => {
         const action = button.dataset.action;
@@ -188,7 +187,7 @@ document.querySelectorAll('.btn').forEach(button => {
                 appendToExpression(value);
                 break;
             case 'operator':
-                // اگر آخرین کاراکتر عملگر بود، به‌جای آن عملگر جدید را بگذار
+                // If last character is operator, replace it with new operator
                 if (currentExpression.length > 0 && isOperator(currentExpression[currentExpression.length - 1])) {
                     currentExpression = currentExpression.slice(0, -1) + value;
                 } else {
@@ -202,7 +201,7 @@ document.querySelectorAll('.btn').forEach(button => {
                     currentExpression = String(result);
                     updateDisplay();
                 } catch (error) {
-                    display.textContent = 'خطا';
+                    display.textContent = 'Error';
                     currentExpression = '';
                 }
                 break;
@@ -210,13 +209,13 @@ document.querySelectorAll('.btn').forEach(button => {
     });
 });
 
-// پشتیبانی از صفحه کلید (اختیاری)
+// Keyboard support (optional)
 document.addEventListener('keydown', (e) => {
     const key = e.key;
     if (/[0-9.]/.test(key)) {
         appendToExpression(key);
     } else if (['+', '-', '*', '/', '%', '^', '(', ')'].includes(key)) {
-        // برای عملگرها همان رفتار دکمه‌ها را انجام می‌دهیم
+        // For operators, do the same as button behavior
         if (currentExpression.length > 0 && isOperator(currentExpression[currentExpression.length - 1])) {
             currentExpression = currentExpression.slice(0, -1) + key;
         } else {
@@ -229,7 +228,7 @@ document.addEventListener('keydown', (e) => {
             currentExpression = String(result);
             updateDisplay();
         } catch (error) {
-            display.textContent = 'خطا';
+            display.textContent = 'Error';
             currentExpression = '';
         }
     } else if (key === 'Backspace') {
@@ -240,5 +239,5 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// شروع با نمایش 0
+// Start with displaying 0
 updateDisplay();
